@@ -2,88 +2,157 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Slap the Picture — Play</title>
+  <title>Slap the Picture — Emoji Hand + Real Slap Sound</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body{font-family:system-ui,Arial;margin:20px;background:#f3f4f6;display:flex;justify-content:center}
-    .card{background:#fff;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:18px;max-width:920px;width:100%}
-    .img-wrap{position:relative;max-width:820px;margin:0 auto}
-    img{width:100%;height:auto;display:block;border-radius:8px;cursor:pointer;user-select:none}
+    :root{--bg:#f2f4f7;--card:#ffffff;--accent:#ff4747}
+    html,body{height:100%;margin:0;font-family:system-ui,Arial;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:var(--card);border-radius:14px;box-shadow:0 10px 32px rgba(0,0,0,.12);padding:20px;max-width:920px;width:100%}
+    h2{margin:0 0 14px 0}
+    .img-wrap{position:relative;max-width:820px;margin:0 auto;border-radius:12px;overflow:hidden;background:#e7e7ee}
+    img{width:100%;height:auto;display:block;user-select:none;cursor:pointer}
     .mark{position:absolute;pointer-events:none;transform:translate(-50%,-50%);mix-blend-mode:multiply}
-    .controls{display:flex;gap:8px;margin-top:12px;justify-content:space-between;align-items:center}
-    button{padding:8px 12px;border-radius:8px;border:1px solid #ddd;background:white;cursor:pointer}
-    .counter{font-weight:600}
-    @keyframes pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:0}40%{transform:translate(-50%,-50%) scale(1.05);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:.9}}
+    .controls{display:flex;gap:10px;margin-top:14px;justify-content:space-between;align-items:center}
+    button{padding:8px 12px;border-radius:8px;border:1px solid #ccc;background:white;cursor:pointer}
+    .counter{font-weight:700}
+
+    
+    .emoji-hand{
+      position:absolute;
+      font-size:100px;
+      transform:translate(-50%,-50%) scale(.6);
+      opacity:0;
+      pointer-events:none;
+      will-change:transform,opacity;
+      z-index:50;
+      text-shadow:0 8px 18px rgba(0,0,0,.25);
+      transition:transform 0.2s cubic-bezier(.2,.9,.25,1), opacity 0.15s linear;
+    }
+    .emoji-pop{
+      opacity:1 !important;
+      transform:translate(-50%,-50%) scale(1.1) rotate(-10deg);
+    }
+
+    @keyframes pop{
+      0%{transform:translate(-50%,-50%) scale(.5);opacity:0}
+      40%{transform:translate(-50%,-50%) scale(1.1);opacity:1}
+      100%{transform:translate(-50%,-50%) scale(1);opacity:.85}
+    }
     .pop{animation:pop 700ms cubic-bezier(.2,.8,.2,1)}
   </style>
 </head>
 <body>
   <div class="card">
-    <h2>Slap the Picture — Play</h2>
+    <h2>Slap the Picture — Emoji Hand Edition</h2>
+
     <div class="img-wrap" id="wrap">
-      <!-- The image filename below must match the file you uploaded to your repo -->
-      <img id="target" src="Screenshot_207.png" alt="Slap target" draggable="false" />
+      <!-- Make sure this file exists in your GitHub repo -->
+      <img id="target" src="Screenshot_207.png" alt="Slap Me" draggable="false" />
+
+      <!-- Emoji hand -->
+      <div id="emoji" class="emoji-hand">🖐️</div>
     </div>
+
     <div class="controls">
       <div>Slaps: <span id="count" class="counter">0</span></div>
       <div style="display:flex;gap:8px">
-        <button id="copyLink">Copy share link</button>
+        <button id="copyLink">Copy link</button>
         <button id="resetBtn">Reset</button>
       </div>
     </div>
-    <p style="margin-top:10px;color:#555;font-size:13px">Tip: Click or tap the image to slap. Use Copy share link to copy the GitHub Pages URL (it will work once the site is published).</p>
   </div>
 
 <script>
+
+const slapAudio = new Audio('slap-sound.mp3');
+slapAudio.preload = 'auto';
+slapAudio.volume = 0.95;
+
+
 const img = document.getElementById('target');
 const wrap = document.getElementById('wrap');
+const emoji = document.getElementById('emoji');
 const countEl = document.getElementById('count');
 let slaps = 0;
 
-function playSlapSound(){
-  try{
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = 'square'; o.frequency.setValueAtTime(250, ctx.currentTime);
-    g.gain.setValueAtTime(0.0001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime+0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.14);
-    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.15);
-  }catch(e){}
-}
-
-function makeMark(xPct,yPct){
+function makeMark(xPct, yPct){
   const mark = document.createElement('div');
   mark.className = 'mark pop';
   mark.style.left = xPct + '%';
   mark.style.top = yPct + '%';
-  const size = Math.round(60 + Math.random()*40);
+  const size = Math.round(40 + Math.random()*60);
   mark.style.width = size + 'px';
   mark.style.height = size + 'px';
   mark.style.borderRadius = '50%';
-  mark.style.background = 'rgba(255,40,40,0.85)';
-  mark.style.boxShadow = '0 6px 14px rgba(0,0,0,0.25)';
-  mark.style.transform += ' rotate(' + (Math.random()*80-40) + 'deg)';
+  mark.style.background = 'rgba(255,80,60,0.95)';
+  mark.style.boxShadow = '0 10px 20px rgba(0,0,0,0.25)';
   wrap.appendChild(mark);
   setTimeout(()=> mark.remove(), 900);
 }
 
+function showEmojiAt(xPct, yPct){
+  const rect = wrap.getBoundingClientRect();
+  const x = rect.left + (xPct/100)*rect.width;
+  const y = rect.top + (yPct/100)*rect.height;
+
+  emoji.style.left = (x - rect.left + 20) + 'px';
+  emoji.style.top = (y - rect.top - 15) + 'px';
+
+  const angle = (Math.random()*40 - 20);
+  emoji.style.transform = `translate(-50%,-50%) rotate(${angle}deg) scale(1)`;
+
+  emoji.classList.remove('emoji-pop');
+  void emoji.offsetWidth;
+  emoji.classList.add('emoji-pop');
+
+  setTimeout(()=> emoji.classList.remove('emoji-pop'), 350);
+}
+
 img.addEventListener('click', function(e){
   const rect = img.getBoundingClientRect();
-  const x = e.clientX - rect.left;  
+  const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-  const xPct = (x/rect.width)*100, yPct = (y/rect.height)*100;
-  slaps += 1; countEl.textContent = slaps; makeMark(xPct,yPct); playSlapSound();
+
+  const xPct = (x / rect.width) * 100;
+  const yPct = (y / rect.height) * 100;
+
+  slaps++;
+  countEl.textContent = slaps;
+
+  makeMark(xPct, yPct);
+  showEmojiAt(xPct, yPct);
+
+  try {
+    slapAudio.currentTime = 0;
+    const p = slapAudio.play();
+    if (p && typeof p.catch === 'function') p.catch(()=>{});
+  } catch(err) {}
 });
 
-document.getElementById('resetBtn').addEventListener('click', function(){ slaps = 0; countEl.textContent = slaps; });
 
-document.getElementById('copyLink').addEventListener('click', async function(){
-  try {
-    const u = window.location.origin + window.location.pathname.replace(/index\\.html$/,'');
-    await navigator.clipboard.writeText(u);
-    alert('Page URL copied to clipboard: ' + u);
-  } catch(e){ alert('Could not copy link.'); }
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  slaps = 0;
+  countEl.textContent = 0;
+});
+
+
+document.getElementById('copyLink').addEventListener('click', async ()=>{
+  try{
+    const url = window.location.origin + window.location.pathname.replace(/index\.html$/,'');
+    await navigator.clipboard.writeText(url);
+    alert("Copied link:\n" + url);
+  }catch(e){
+    alert("Could not copy link.");
+  }
+});
+
+
+window.addEventListener('load', ()=>{
+  const p = new URL(window.location.href).searchParams.get('img');
+  if (p){
+    if (p.startsWith("http")) img.src = p;
+    else img.src = p;
+  }
 });
 </script>
 </body>
