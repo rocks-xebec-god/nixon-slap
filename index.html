@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Slap the Picture — Play</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:system-ui,Arial;margin:20px;background:#f3f4f6;display:flex;justify-content:center}
+    .card{background:#fff;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:18px;max-width:920px;width:100%}
+    .img-wrap{position:relative;max-width:820px;margin:0 auto}
+    img{width:100%;height:auto;display:block;border-radius:8px;cursor:pointer;user-select:none}
+    .mark{position:absolute;pointer-events:none;transform:translate(-50%,-50%);mix-blend-mode:multiply}
+    .controls{display:flex;gap:8px;margin-top:12px;justify-content:space-between;align-items:center}
+    button{padding:8px 12px;border-radius:8px;border:1px solid #ddd;background:white;cursor:pointer}
+    .counter{font-weight:600}
+    @keyframes pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:0}40%{transform:translate(-50%,-50%) scale(1.05);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:.9}}
+    .pop{animation:pop 700ms cubic-bezier(.2,.8,.2,1)}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Slap the Picture — Play</h2>
+    <div class="img-wrap" id="wrap">
+      <!-- The image filename below must match the file you uploaded to your repo -->
+      <img id="target" src="Screenshot_207.png" alt="Slap target" draggable="false" />
+    </div>
+    <div class="controls">
+      <div>Slaps: <span id="count" class="counter">0</span></div>
+      <div style="display:flex;gap:8px">
+        <button id="copyLink">Copy share link</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </div>
+    <p style="margin-top:10px;color:#555;font-size:13px">Tip: Click or tap the image to slap. Use Copy share link to copy the GitHub Pages URL (it will work once the site is published).</p>
+  </div>
+
+<script>
+const img = document.getElementById('target');
+const wrap = document.getElementById('wrap');
+const countEl = document.getElementById('count');
+let slaps = 0;
+
+function playSlapSound(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'square'; o.frequency.setValueAtTime(250, ctx.currentTime);
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.14);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.15);
+  }catch(e){}
+}
+
+function makeMark(xPct,yPct){
+  const mark = document.createElement('div');
+  mark.className = 'mark pop';
+  mark.style.left = xPct + '%';
+  mark.style.top = yPct + '%';
+  const size = Math.round(60 + Math.random()*40);
+  mark.style.width = size + 'px';
+  mark.style.height = size + 'px';
+  mark.style.borderRadius = '50%';
+  mark.style.background = 'rgba(255,40,40,0.85)';
+  mark.style.boxShadow = '0 6px 14px rgba(0,0,0,0.25)';
+  mark.style.transform += ' rotate(' + (Math.random()*80-40) + 'deg)';
+  wrap.appendChild(mark);
+  setTimeout(()=> mark.remove(), 900);
+}
+
+img.addEventListener('click', function(e){
+  const rect = img.getBoundingClientRect();
+  const x = e.clientX - rect.left;  
+  const y = e.clientY - rect.top;
+  const xPct = (x/rect.width)*100, yPct = (y/rect.height)*100;
+  slaps += 1; countEl.textContent = slaps; makeMark(xPct,yPct); playSlapSound();
+});
+
+document.getElementById('resetBtn').addEventListener('click', function(){ slaps = 0; countEl.textContent = slaps; });
+
+document.getElementById('copyLink').addEventListener('click', async function(){
+  try {
+    const u = window.location.origin + window.location.pathname.replace(/index\\.html$/,'');
+    await navigator.clipboard.writeText(u);
+    alert('Page URL copied to clipboard: ' + u);
+  } catch(e){ alert('Could not copy link.'); }
+});
+</script>
+</body>
+</html>
